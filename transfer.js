@@ -1,14 +1,9 @@
-const chain = require("./Chain.json");
-const token = require("./tokenList.json");
-const chainLists = chain.Chains;
-const tokenLists = token.Tokens;
 const Web3 = require("web3");
-const { ethers } = require("ethers");
-const ERC20abi = require("../helpers/abi.json");
-const adminWalletEVM = ""; // admin wallet address
-const PRIVATEKEY = ""; // admin wallet private key
-const rpcUrl = ""; // rpc of the chain
-const tokenAddress = ""; // token address
+const ERC20abi = require("./abi.json");
+const adminWalletEVM = "";
+const PRIVATEKEY = "";
+const rpcUrl = "";
+const tokenAddress = "";
 
 const ERC20Transfer = async (data) => {
   try {
@@ -20,11 +15,11 @@ const ERC20Transfer = async (data) => {
 
     let decimals = await tokenContract.methods.decimals().call();
 
-    let amount =
-      "0x" + parseFloat((data.amount * 10 ** decimals).toFixed(0)).toString(16);
-
+    let amount = web3connect.utils
+      .toBN(data.amount)
+      .mul(web3connect.utils.toBN(10).pow(web3connect.utils.toBN(decimals)));
     let Data = tokenContract.methods
-      .transfer(data.reciepienAddress, amount)
+      .transfer(data.recipientAddress, amount)
       .encodeABI();
 
     const from_account = web3connect.utils.toChecksumAddress(adminWalletEVM);
@@ -57,22 +52,22 @@ const ERC20Transfer = async (data) => {
     let tx1 = await web3connect.eth.accounts.signTransaction(tx, PRIVATEKEY);
     let txrec = await web3connect.eth.sendSignedTransaction(tx1.rawTransaction);
 
-    const expectedBlockTime = 3000; // 10sec
+    const expectedBlockTime = 3000; // 3sec
 
     const sleep = (milliseconds) => {
       return new Promise((resolve) => setTimeout(resolve, milliseconds));
     };
 
-    let transreciept = null;
-    while (transreciept == null) {
-      transreciept = await web3connect.eth.getTransactionReceipt(
+    let transReceipt = null;
+    while (transReceipt == null) {
+      transReceipt = await web3connect.eth.getTransactionReceipt(
         txrec.transactionHash
       );
       await sleep(expectedBlockTime);
     }
 
-    if (transreciept.status) {
-      return transreciept;
+    if (transReceipt.status) {
+      return transReceipt;
     } else {
       return false;
     }
